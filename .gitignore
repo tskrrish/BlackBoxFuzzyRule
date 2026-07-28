@@ -4,7 +4,7 @@ __pycache__/
 venv/
 .ipynb_checkpoints/
 *.png
-*.csv
+.csv
 results/
 .DS_Store
 .vscode/
