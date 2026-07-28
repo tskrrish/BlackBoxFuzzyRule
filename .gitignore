@@ -5,6 +5,5 @@ venv/
 .ipynb_checkpoints/
 *.png
 .csv
-results/
 .DS_Store
 .vscode/
