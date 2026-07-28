@@ -7,6 +7,8 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.decomposition import PCA
+from scipy.spatial import Delaunay
+
 
 
 # ---------------------------------------------------------------------------
@@ -81,3 +83,41 @@ def barycentric_triangle(p, A, B, C):
     wB, wC = np.linalg.solve(M, p - A)     # solve the system
     wA = 1 - wB - wC
     return wA, wB, wC
+
+
+def quad_weights(p, corners, tol=1e-9):
+    """
+    Weights over 4 corners A,B,C,D, split along diagonal A-C.
+    Returns dict {A,B,C,D} summing to 1, or None if p is outside the quad.
+    """
+    A, B, C, D = corners
+    # try the A-B-C half
+    wA, wB, wC = barycentric_triangle(p, A, B, C)
+    if min(wA, wB, wC) >= -tol:                     # inside ABC?
+        return {"A": wA, "B": wB, "C": wC, "D": 0.0}
+    # else try the A-C-D half
+    wA, wC, wD = barycentric_triangle(p, A, C, D)
+    if min(wA, wC, wD) >= -tol:                     # inside ACD?
+        return {"A": wA, "B": 0.0, "C": wC, "D": wD}
+    return None                                     # outside both -> no honest explanation
+
+
+
+def delaunay_weights(p, tri, n_corners):
+    """
+    Weights of p over ALL corners, via Delaunay triangulation `tri`.
+    Returns a length-n_corners array summing to 1, or None if p is outside.
+    """
+    s = tri.find_simplex(p)
+    if s < 0:                                    # outside every triangle
+        return None
+    # barycentric coords of p within triangle #s
+    T = tri.transform[s, :2]                     # 2x2 transform for this simplex
+    r = tri.transform[s, 2]                      # reference vertex offset
+    bary = T.dot(p - r)                          # first 2 barycentric coords
+    bary = np.append(bary, 1 - bary.sum())       # third coord (they sum to 1)
+    # scatter these 3 weights onto the full corner list
+    w = np.zeros(n_corners)
+    verts = tri.simplices[s]                      # the 3 corner indices of triangle s
+    w[verts] = bary
+    return w
