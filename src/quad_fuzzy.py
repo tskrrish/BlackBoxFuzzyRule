@@ -44,3 +44,40 @@ def embed_2d(df, cols=("a", "b", "c", "d")):
     pca = PCA(n_components=2)
     xy = pca.fit_transform(df[list(cols)])
     return pca, xy
+
+
+
+# ---------------------------------------------------------------------------
+# (c) pick corners
+# ---------------------------------------------------------------------------
+
+
+def pick_corners(xy, k, seed=0):
+    """Farthest-point sampling: k well-spread corners from the cloud xy."""
+    rng = np.random.default_rng(seed)
+    n = xy.shape[0]
+    chosen = [int(rng.integers(n))]                      # 1. random start
+    dist = np.linalg.norm(xy - xy[chosen[0]], axis=1)    # dist from every point to that corner
+    for _ in range(k - 1):
+        nxt = int(np.argmax(dist))                       # (A) point farthest from chosen set
+        chosen.append(nxt)
+        dist = np.minimum(dist, np.linalg.norm(xy - xy[nxt], axis=1))  # (B) update nearest-corner dist
+    return chosen
+
+
+# ---------------------------------------------------------------------------
+# (d) barycentric coordinates
+# ---------------------------------------------------------------------------
+
+
+def barycentric_triangle(p, A, B, C):
+    """Weights of p as a blend of triangle corners A, B, C.
+    Returns (wA, wB, wC), summing to 1. A negative weight => p is OUTSIDE."""
+    A, B, C, p = map(np.asarray, (A, B, C, p))
+    # Solve  wA*A + wB*B + wC*C = p  with  wA+wB+wC = 1.
+    # Substitute wA = 1 - wB - wC, giving a 2x2 linear system in (wB, wC):
+    #   wB*(B - A) + wC*(C - A) = p - A
+    M = np.column_stack([B - A, C - A])   # 2x2 matrix
+    wB, wC = np.linalg.solve(M, p - A)     # solve the system
+    wA = 1 - wB - wC
+    return wA, wB, wC
