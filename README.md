@@ -50,7 +50,7 @@ Two further properties fall out of the same geometry:
 - **Sparsity is a free confidence signal.** The dominant barycentric weight
   tracks the model's certainty: extreme inputs collapse onto a single
   prototype (~100%), ambiguous inputs produce a near-even multi-prototype
-  blend.
+  blend. (NEEDS MORE TESTING)
 - **Honest abstention.** A point outside the convex hull of prototypes gets
   *no* explanation rather than a fabricated one — a genuine contrast with
   attribution methods (LIME/SHAP) that always return something, even for
